@@ -1,26 +1,29 @@
-body{
-  background: linear-gradient(to left,red,black);
+body {
+  background: linear-gradient(to left, red, black);
+  margin: 0;
+  font-family: Arial, sans-serif;
 }
+
 .homepage {
   position: relative;
   width: 80%;
   margin: 0 auto;
-  
- 
 }
 
 .background-video {
   width: 100%;
   height: auto;
-  
 }
 
 .preview-frame {
   position: absolute;
-  top: 80%;
-  left: 0;
-  pointer-events: none;  /* Prevent interference with hover actions */
+  bottom: 40px;
+  background-color: rgba(0, 0, 0, 0.7);
+  padding: 5px;
+  border: 1px solid #fff;
   z-index: 10;
+  pointer-events: none; /* Prevent interaction */
+  transition: left 0.1s ease-out; /* Smooth movement for preview frame */
 }
 
 .preview-video {
@@ -41,4 +44,18 @@ body{
   color: white;
   cursor: pointer;
   font-size: 16px;
+}
+
+.preview-image {
+  width: 200px;
+  height: 120px;
+  object-fit: contain;
+}
+
+.hidden-video {
+  display: none;
+}
+
+.offscreen-canvas {
+  display: none;
 }

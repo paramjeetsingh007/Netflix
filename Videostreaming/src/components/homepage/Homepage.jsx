@@ -1,72 +1,78 @@
-import React, { useState, useRef, useEffect } from "react";
-import axios from "axios";
+import React, { useState, useRef } from "react";
 import "./Homepage.css";
 
 function Homepage({ setLoginUser, user }) {
-  const [previewTime, setPreviewTime] = useState(null); // State to track the preview time
-  const videoRef = useRef(null);
-  const previewVideoRef = useRef(null);
-
-  useEffect(() => {
-    if (videoRef.current) {
-      // Set video progress from user data
-      videoRef.current.currentTime = user.videoProgress || 0;
-    }
-  }, [user]);
-
-  const handleLogout = async () => {
-    if (videoRef.current) {
-      // Save current video progress to the backend
-      const progress = videoRef.current.currentTime;
-      await axios.post("http://localhost:9002/save-progress", {
-        email: user.email,
-        videoProgress: progress,
-      });
-    }
-    setLoginUser({});
-  };
+  const [previewImage, setPreviewImage] = useState(null); // State for the preview image
+  const [isSeeking, setIsSeeking] = useState(false); // To track progress bar interaction
+  const backgroundVideoRef = useRef(null);
+  const previewVideoRef = useRef(null); // Ref for the hidden video
+  const canvasRef = useRef(null); // Offscreen canvas for extracting frames
 
   const handleHover = (event) => {
-    const video = videoRef.current;
+    if (isSeeking) return; // Skip hover behavior when user interacts with progress bar
+
+    const video = backgroundVideoRef.current;
+    const previewVideo = previewVideoRef.current;
+
+    if (!previewVideo) return;
+
     const videoRect = video.getBoundingClientRect();
     const offsetX = event.clientX - videoRect.left;
-    const newTime = (offsetX / videoRect.width) * video.duration;
+    const hoverTime = (offsetX / videoRect.width) * video.duration;
 
-    setPreviewTime(newTime); // Update the preview time based on hover position
+    // Seek the hidden video to the hovered time
+    previewVideo.currentTime = hoverTime;
+    previewVideo.addEventListener(
+      "seeked",
+      () => {
+        // Extract the frame from the hidden video
+        const canvas = canvasRef.current;
+        const context = canvas.getContext("2d");
+        context.drawImage(previewVideo, 0, 0, canvas.width, canvas.height);
+        setPreviewImage(canvas.toDataURL("image/png")); // Set the preview image
+      },
+      { once: true }
+    );
 
-    // Ensure preview video plays when hovering
-    const previewVideo = previewVideoRef.current;
-    if (previewVideo) {
-      previewVideo.currentTime = newTime;
-      previewVideo.play(); // Start playing the preview video
-    }
-
-    // Move the preview frame based on hover position
-    const previewFrame = document.querySelector('.preview-frame');
+    // Move the preview frame
+    const previewFrame = document.querySelector(".preview-frame");
     if (previewFrame) {
       const previewFrameWidth = previewFrame.offsetWidth;
-      const newLeft = offsetX - previewFrameWidth / 2; // Center the frame on the hover
+      const newLeft = offsetX - previewFrameWidth / 2; // Center the frame
+
+      // Ensure preview frame stays within the video boundaries
       previewFrame.style.left = `${Math.min(
         Math.max(newLeft, 0),
         videoRect.width - previewFrameWidth
-      )}px`; // Prevent the frame from going outside the video
+      )}px`;
     }
   };
 
   const handleMouseLeave = () => {
-    setPreviewTime(null); // Hide the preview when the mouse leaves the video
+    setPreviewImage(null); // Clear the preview image
+  };
 
-    // Pause the preview video when the mouse leaves
-    const previewVideo = previewVideoRef.current;
-    if (previewVideo) {
-      previewVideo.pause();
+  const handleSeek = (event) => {
+    setIsSeeking(true);
+
+    const video = backgroundVideoRef.current;
+    const videoRect = video.getBoundingClientRect();
+    const offsetX = event.clientX - videoRect.left;
+    const newTime = (offsetX / videoRect.width) * video.duration;
+
+    // Update the background video time
+    if (video) {
+      video.currentTime = newTime;
     }
+
+    setTimeout(() => setIsSeeking(false), 200); // Reset seeking state
   };
 
   return (
     <div className="homepage">
+      {/* Background video */}
       <video
-        ref={videoRef}
+        ref={backgroundVideoRef}
         className="background-video"
         controls
         autoPlay
@@ -74,27 +80,41 @@ function Homepage({ setLoginUser, user }) {
         muted
         onMouseMove={handleHover}
         onMouseLeave={handleMouseLeave}
+        onClick={handleSeek} // Update video time on click
       >
         <source src="/assets/videoplayback.mp4" type="video/mp4" />
         Your browser does not support the video tag.
       </video>
 
       {/* Video preview frame */}
-      {previewTime !== null && (
+      {previewImage && (
         <div className="preview-frame">
-          <video
-            ref={previewVideoRef}
-            className="preview-video"
-            src="/assets/videoplayback.mp4"
-            currentTime={previewTime}
-            muted
-            loop
-            style={{ objectFit: "cover" }}
+          <img
+            src={previewImage}
+            alt="Preview"
+            className="preview-image"
           />
         </div>
       )}
 
-      <div className="logout-button" onClick={handleLogout}>
+      {/* Hidden video for frame extraction */}
+      <video
+        ref={previewVideoRef}
+        className="hidden-video"
+        src="/assets/videoplayback.mp4"
+        style={{ display: "none" }}
+      />
+
+      {/* Offscreen canvas for extracting frames */}
+      <canvas
+        ref={canvasRef}
+        className="offscreen-canvas"
+        width="200" // Match preview image size
+        height="120"
+        style={{ display: "none" }}
+      />
+
+      <div className="logout-button" onClick={() => setLoginUser({})}>
         Logout
       </div>
     </div>

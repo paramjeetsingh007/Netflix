@@ -1,0 +1,44 @@
+body{
+  background: linear-gradient(to left,red,black);
+}
+.homepage {
+  position: relative;
+  width: 80%;
+  margin: 0 auto;
+  
+ 
+}
+
+.background-video {
+  width: 100%;
+  height: auto;
+  
+}
+
+.preview-frame {
+  position: absolute;
+  top: 80%;
+  left: 0;
+  pointer-events: none;  /* Prevent interference with hover actions */
+  z-index: 10;
+}
+
+.preview-video {
+  width: 150px;
+  height: 80px;
+  object-fit: cover; /* Ensure the video scales properly */
+  border: 2px solid #fff;
+  border-radius: 5px;
+}
+
+.logout-button {
+  position: absolute;
+  top: 20px;
+  right: 20px;
+  background-color: blue;
+  padding: 10px;
+  border-radius: 5px;
+  color: white;
+  cursor: pointer;
+  font-size: 16px;
+}
